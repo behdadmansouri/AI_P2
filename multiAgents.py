@@ -194,7 +194,6 @@ class MinimaxAgent(MultiAgentSearchAgent):
         return returnAction
 
 
-
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
     Your minimax agent with alpha-beta pruning (question 3)
@@ -279,8 +278,55 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        # used by pacman
+        def max_finder(gameState, depth):
+            # if we need to return (and depth is +1 to find depth for max)
+            if gameState.isWin() or gameState.isLose() or depth + 1 == self.depth:
+                return self.evaluationFunction(gameState)
+            # initialize maxvalue
+            maxvalue = -9999
+            # replace if there's any better value
+            # action for 0 because it's asking for pacman's actions
+            for action in gameState.getLegalActions(0):
+                # 0 because it's asking for pacman's successors
+                successor = gameState.generateSuccessor(0, action)
+                maxvalue = max(maxvalue, random_min(successor, depth + 1, 1))
+            return maxvalue
+
+        # used by ghosts
+        def random_min(gameState, depth, agentIndex):
+            # if we need to return
+            if gameState.isWin() or gameState.isLose():  # Terminal Test
+                return self.evaluationFunction(gameState)
+            # get actions here
+            all_actions = gameState.getLegalActions(agentIndex)
+            expectation = 0
+            actions_len = len(all_actions)
+            # traversing the tree
+            for action in all_actions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                # one agent works in pacman's favor and one doesn't
+                if agentIndex == (gameState.getNumAgents() - 1):
+                    expectedvalue = max_finder(successor, depth)
+                else:
+                    expectedvalue = random_min(successor, depth, agentIndex + 1)
+                expectation = expectation + expectedvalue
+            if actions_len == 0:
+                return 0
+            return float(expectation) / float(actions_len)
+
+        # initialize score and action
+        currentScore = -9999
+        returnAction = ''
+        for action in gameState.getLegalActions(0):
+            # traverse tree
+            score = random_min(gameState.generateSuccessor(0, action), 0, 1)
+            # if there's a better action (max successors - based on score) choose that
+            if score > currentScore:
+                returnAction = action
+                currentScore = score
+        return returnAction
 
 
 def betterEvaluationFunction(currentGameState):
@@ -290,8 +336,25 @@ def betterEvaluationFunction(currentGameState):
 
     DESCRIPTION: <write something here so we know what you did>
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    current_position = currentGameState.getPacmanPosition()
+    current_food = currentGameState.getFood().asList()
+    remaining_food = currentGameState.getNumFood()
+    remaining_caps = len(currentGameState.getCapsules())
+
+    closest_food = 9999
+    for food in current_food:
+        closest_food = min(closest_food, manhattanDistance(current_position, food))
+
+    closest_ghost = 0
+    for ghost in currentGameState.getGhostPositions():
+        closest_ghost = manhattanDistance(current_position, ghost)
+        if closest_ghost < 2:
+            return -9999
+
+    return 1.0 / (remaining_food + 1) * 900000 + closest_ghost + \
+           1.0 / (closest_food + 1) * 900 + \
+           1.0 / (remaining_caps + 1) * 9000 + \
+           50000 if currentGameState.isWin() else (-50000 if currentGameState.isLose() else 0)
 
 
 # Abbreviation
