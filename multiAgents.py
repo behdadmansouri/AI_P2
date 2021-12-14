@@ -351,10 +351,15 @@ def betterEvaluationFunction(currentGameState):
         if closest_ghost < 2:
             return -9999
 
+    additionalFactors = 0
+    if currentGameState.isLose():
+        additionalFactors -= 50000
+    elif currentGameState.isWin():
+        additionalFactors += 50000
+
     return 1.0 / (remaining_food + 1) * 900000 + closest_ghost + \
            1.0 / (closest_food + 1) * 900 + \
-           1.0 / (remaining_caps + 1) * 9000 + \
-           50000 if currentGameState.isWin() else (-50000 if currentGameState.isLose() else 0)
+           1.0 / (remaining_caps + 1) * 9000 + additionalFactors
 
 
 # Abbreviation
