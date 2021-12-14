@@ -149,8 +149,53 @@ class MinimaxAgent(MultiAgentSearchAgent):
         gameState.isLose():
         Returns whether or not the game state is a losing state
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        # used by pacman
+        def max_finder(gameState, depth):
+            # if we need to return
+            # depth is always +1 to find depth for max
+            if gameState.isWin() or gameState.isLose() or depth + 1 == self.depth:
+                return self.evaluationFunction(gameState)
+            # initialize maxvalue
+            largest = -9999
+            # 0 because it's asking for pacman's actions
+            actions = gameState.getLegalActions(0)
+            # replace if there's any better value
+            for action in actions:
+                # 0 because it's asking for pacman's successors
+                successor = gameState.generateSuccessor(0, action)
+                largest = max(largest, min_finder(successor, depth + 1, 1))
+            return largest
+
+        # used by ghosts
+        def min_finder(gameState, depth, agentIndex):
+            # if we need to return
+            if gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            smallest = 9999
+            actions = gameState.getLegalActions(agentIndex)
+            # traversing the tree
+            for action in actions:
+                successor = gameState.generateSuccessor(agentIndex, action)
+                if agentIndex == (gameState.getNumAgents() - 1):
+                    smallest = min(smallest, max_finder(successor, depth))
+                else:
+                    smallest = min(smallest, min_finder(successor, depth, agentIndex + 1))
+            return smallest
+
+        # initialize score and action
+        currentScore = -999999
+        returnAction = ''
+        for action in gameState.getLegalActions(0):
+            nextState = gameState.generateSuccessor(0, action)
+            # traverse the tree - agent 1 is the ghost
+            score = min_finder(nextState, 0, 1)
+            # if there's a better action (max successors - based on score) choose that
+            if score > currentScore:
+                returnAction = action
+                currentScore = score
+        return returnAction
+
 
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
