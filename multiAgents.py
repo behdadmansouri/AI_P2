@@ -158,10 +158,9 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 return self.evaluationFunction(gameState)
             # initialize maxvalue
             largest = -9999
-            # 0 because it's asking for pacman's actions
-            actions = gameState.getLegalActions(0)
             # replace if there's any better value
-            for action in actions:
+            # actions for 0 because it's asking for pacman's actions
+            for action in gameState.getLegalActions(0):
                 # 0 because it's asking for pacman's successors
                 successor = gameState.generateSuccessor(0, action)
                 largest = max(largest, min_finder(successor, depth + 1, 1))
@@ -173,9 +172,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
             if gameState.isWin() or gameState.isLose():
                 return self.evaluationFunction(gameState)
             smallest = 9999
-            actions = gameState.getLegalActions(agentIndex)
             # traversing the tree
-            for action in actions:
+            for action in gameState.getLegalActions(agentIndex):
                 successor = gameState.generateSuccessor(agentIndex, action)
                 if agentIndex == (gameState.getNumAgents() - 1):
                     smallest = min(smallest, max_finder(successor, depth))
@@ -187,9 +185,8 @@ class MinimaxAgent(MultiAgentSearchAgent):
         currentScore = -999999
         returnAction = ''
         for action in gameState.getLegalActions(0):
-            nextState = gameState.generateSuccessor(0, action)
             # traverse the tree - agent 1 is the ghost
-            score = min_finder(nextState, 0, 1)
+            score = min_finder(gameState.generateSuccessor(0, action), 0, 1)
             # if there's a better action (max successors - based on score) choose that
             if score > currentScore:
                 returnAction = action
@@ -207,8 +204,67 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+
+        # Used by pacman
+        def max_finder(gameState, depth, alpha, beta):
+            # if we need to return (and depth is +1 to find depth for max)
+            if gameState.isWin() or gameState.isLose() or depth + 1 == self.depth:
+                return self.evaluationFunction(gameState)
+            # initialize maxvalue
+            largest = -9999
+            temp_alpha = alpha
+            # actions for - because it's asking for pacman's actions
+            for action in gameState.getLegalActions(0):
+                # 0 because it's asking for pacman's successors
+                successor = gameState.generateSuccessor(0, action)
+                largest = max(largest, min_finder(successor, depth + 1, 1, temp_alpha, beta))
+                # prune: not largest - equal, since stated in the project guide
+                if largest > beta:
+                    return largest
+                temp_alpha = max(temp_alpha, largest)
+            return largest
+
+        # used by ghosts
+        def min_finder(gameState, depth, agentIndex, alpha, beta):
+            # if we need to return
+            if gameState.isWin() or gameState.isLose():  # Terminal Test
+                return self.evaluationFunction(gameState)
+            minvalue = 9999
+            temp_beta = beta
+            # traversing the tree
+            for action in gameState.getLegalActions(agentIndex):
+                successor = gameState.generateSuccessor(agentIndex, action)
+                if agentIndex == (gameState.getNumAgents() - 1):
+                    minvalue = min(minvalue, max_finder(successor, depth, alpha, temp_beta))
+                    # prune
+                    if minvalue < alpha:
+                        return minvalue
+                    temp_beta = min(temp_beta, minvalue)
+                else:
+                    minvalue = min(minvalue, min_finder(successor, depth, agentIndex + 1, alpha, temp_beta))
+                    # prune
+                    if minvalue < alpha:
+                        return minvalue
+                    temp_beta = min(temp_beta, minvalue)
+            return minvalue
+
+        # initialize score and action
+        currentScore = -9999
+        returnAction = ''
+        alpha = -9999
+        beta = 9999
+        for action in gameState.getLegalActions(0):
+            # Next level is a min level. Hence calling min for successors of the root.
+            score = min_finder(gameState.generateSuccessor(0, action), 0, 1, alpha, beta)
+            # if there's a better action (max successors - based on score) choose that
+            if score > currentScore:
+                returnAction = action
+                currentScore = score
+            # Updating alpha
+            if score > beta:
+                return returnAction
+            alpha = max(alpha, score)
+        return returnAction
 
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
